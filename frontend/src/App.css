@@ -5,7 +5,7 @@ body {
 }
 
 .dashboard {
-  width: 80%;
+  width: 90%;
   margin: 20px auto;
   background: #fff;
   padding: 20px;
@@ -35,18 +35,34 @@ header h1 {
   color: white;
 }
 
+.controls {
+  margin: 20px 0;
+}
+
+.controls input,
+.controls select,
+.controls button {
+  padding: 8px;
+  margin: 0 10px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
 .stats {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   margin-bottom: 20px;
 }
 
 .stat {
   background: #3498db;
   color: #fff;
-  padding: 10px 20px;
+  padding: 15px;
   margin: 10px;
   border-radius: 5px;
+  width: 40%;
+  min-width: 300px;
 }
 
 .processList {

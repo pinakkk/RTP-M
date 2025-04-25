@@ -23,7 +23,12 @@ ChartJS.register(
   Legend
 );
 
-const socket = io("http://localhost:8080");
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
+const socket = io(BACKEND_URL, {
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  transports: ['websocket', 'polling']
+});
 
 function App() {
   const [processes, setProcesses] = useState([]);
@@ -53,6 +58,17 @@ function App() {
     });
 
     return () => socket.off("processData");
+  }, []);
+
+  useEffect(() => {
+    socket.on('connect_error', (err) => {
+      console.error('Socket connection error:', err.message);
+      // You could set some state here to show a user-friendly error message
+    });
+
+    return () => {
+      socket.off('connect_error');
+    };
   }, []);
 
   const getFilteredAndSortedData = (data) => {

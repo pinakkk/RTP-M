@@ -23,13 +23,7 @@ ChartJS.register(
   Legend
 );
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8080";
-const socket = io(BACKEND_URL, {
-  reconnectionAttempts: 10,
-  reconnectionDelay: 1000,
-  timeout: 20000,
-  transports: ['polling'] // Remove websocket to avoid connection issues
-});
+const socket = io("http://localhost:8080");
 
 function App() {
   const [processes, setProcesses] = useState([]);
@@ -40,18 +34,12 @@ function App() {
   const [sortBy, setSortBy] = useState("memory");
   const [cpuData, setCpuData] = useState([]);
   const [memoryData, setMemoryData] = useState([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
     socket.on("processData", (data) => {
-      console.log("Received data:", data);
-      console.log("Apps data:", data.apps);
-      console.log("Apps length:", data.apps ? data.apps.length : 0);
-      
-      if (data.apps) setApps(data.apps);
-      if (data.allProcesses) setProcesses(data.allProcesses);
-      if (data.systemStats) setSystemStats(data.systemStats);
+      setApps(data.apps);
+      setProcesses(data.allProcesses);
+      setSystemStats(data.systemStats);
 
       setCpuData((prev) => {
         const newData = [...prev.slice(-19), Number(data.systemStats.totalCpuUsage)].slice(-20);
@@ -67,45 +55,14 @@ function App() {
     return () => socket.off("processData");
   }, []);
 
-  useEffect(() => {
-    socket.on('connect', () => {
-      console.log('Socket connected');
-      setIsConnected(true);
-      setConnectionError(false);
-    });
-    
-    socket.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setIsConnected(false);
-    });
-    
-    socket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err.message);
-      setConnectionError(true);
-    });
-
-    return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('connect_error');
-    };
-  }, []);
-
   const getFilteredAndSortedData = (data) => {
-    // Make sure data is an array
-    if (!Array.isArray(data)) {
-      console.error("Expected array but got:", data);
-      return [];
-    }
-    
     let filtered = data.filter((proc) =>
-      proc && proc.name && proc.name.toLowerCase().includes(filter.toLowerCase())
+      proc.name.toLowerCase().includes(filter.toLowerCase())
     );
-    
     return filtered.sort((a, b) =>
       sortBy === "memory"
-        ? parseFloat(b.memory || 0) - parseFloat(a.memory || 0)
-        : parseFloat(b.cpu || 0) - parseFloat(a.cpu || 0)
+        ? parseFloat(b.memory) - parseFloat(a.memory)
+        : parseFloat(b.cpu) - parseFloat(a.cpu)
     );
   };
 
@@ -143,26 +100,6 @@ function App() {
       { label: "Memory Usage (%)", data: memoryData, borderColor: "green", fill: false },
     ],
   };
-
-  if (connectionError) {
-    return (
-      <div className="error-message">
-        <h2>Connection Error</h2>
-        <p>Unable to connect to the server. Please try again later.</p>
-        <button onClick={() => window.location.reload()}>Retry</button>
-      </div>
-    );
-  }
-
-  if (!isConnected || (view === "apps" && apps.length === 0) || 
-      (view === "all" && processes.length === 0)) {
-    return (
-      <div className="loading">
-        <h2>Loading data...</h2>
-        <p>Connecting to server...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="dashboard">

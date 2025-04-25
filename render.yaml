@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: rtp-m-backend
+    runtime: node
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: FRONTEND_URL
+        value: https://your-frontend-url-on-vercel.vercel.app
+    buildFilter:
+      paths:
+        - backend/**

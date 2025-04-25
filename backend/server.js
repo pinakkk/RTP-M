@@ -3,22 +3,35 @@ import http from "http";
 import { Server } from "socket.io";
 import { spawn } from "child_process";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Get the directory name from the current file path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST"],
   },
 });
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:3000"
+}));
+
+// Add route handler for root path
+app.get("/", (req, res) => {
+  res.send("Process Monitor API Server - Connect with the React frontend to see the dashboard");
+});
 
 const getProcessData = () => {
   return new Promise((resolve) => {
     const pythonProcess = spawn("python", ["process_monitor.py"], {
-      cwd: "D:/My Projects/MONITOR/RTP-M/backend",
+      cwd: __dirname // Use the current directory instead of hardcoded path
     });
 
     let output = "";
@@ -76,6 +89,8 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(8080, () => {
-  console.log("Server running on http://localhost:8080");
+const PORT = process.env.PORT || 8080;
+
+server.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });

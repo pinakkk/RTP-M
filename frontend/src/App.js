@@ -39,59 +39,35 @@ function App() {
   const [sortBy, setSortBy] = useState("memory");
   const [cpuData, setCpuData] = useState([]);
   const [memoryData, setMemoryData] = useState([]);
-  const [connectionStatus, setConnectionStatus] = useState("Connecting...");
-  const [dataReceived, setDataReceived] = useState(false);
 
   useEffect(() => {
-    socket.on("connect", () => {
-      console.log("Socket connected");
-      setConnectionStatus("Connected");
-    });
-    
     socket.on("processData", (data) => {
-      console.log("Full data received:", data); // Debug full data object
-      
-      if (data && data.allProcesses && Array.isArray(data.allProcesses)) {
-        console.log("Process count:", data.allProcesses.length);
-        setProcesses(data.allProcesses);
-        setDataReceived(true);
-      } else {
-        console.error("Invalid process data received:", data.allProcesses);
-      }
-      
-      if (data && data.apps && Array.isArray(data.apps)) {
-        setApps(data.apps);
-      }
-      
-      if (data && data.systemStats) {
-        setSystemStats(data.systemStats);
-        
-        setCpuData((prev) => {
-          const newData = [...prev.slice(-19), Number(data.systemStats.totalCpuUsage)].slice(-20);
-          return newData;
-        });
-        setMemoryData((prev) => [
-          ...prev.slice(-19),
-          ((data.systemStats.usedMemory / data.systemStats.totalMemory) * 100).toFixed(2),
-        ].slice(-20));
-      }
+      setApps(data.apps);
+      setProcesses(data.allProcesses);
+      setSystemStats(data.systemStats);
+
+      setCpuData((prev) => {
+        const newData = [...prev.slice(-19), Number(data.systemStats.totalCpuUsage)].slice(-20);
+        console.log("CPU Data:", newData); // Debug log
+        return newData;
+      });
+      setMemoryData((prev) => [
+        ...prev.slice(-19),
+        ((data.systemStats.usedMemory / data.systemStats.totalMemory) * 100).toFixed(2),
+      ].slice(-20));
     });
 
+    return () => socket.off("processData");
+  }, []);
+
+  useEffect(() => {
     socket.on('connect_error', (err) => {
       console.error('Socket connection error:', err.message);
-      setConnectionStatus(`Connection error: ${err.message}`);
-    });
-
-    socket.on('disconnect', () => {
-      console.log("Socket disconnected");
-      setConnectionStatus("Disconnected - trying to reconnect...");
+      // You could set some state here to show a user-friendly error message
     });
 
     return () => {
-      socket.off("connect");
-      socket.off("processData");
       socket.off('connect_error');
-      socket.off('disconnect');
     };
   }, []);
 
@@ -156,13 +132,7 @@ function App() {
             System Stats
           </button>
         </div>
-        <p className="connection-status">{connectionStatus}</p>
       </header>
-
-      <div className="connection-status">
-        {connectionStatus}
-        {dataReceived ? ` | Data received` : " | Waiting for data..."}
-      </div>
 
       {view !== "stats" && (
         <>
@@ -195,22 +165,6 @@ function App() {
               ))}
             </ul>
           </div>
-
-          {(view === "all" && processes.length === 0) && (
-            <div className="error-message">
-              No process data received from the server.
-              <br />
-              <small>Check server connection and make sure process_monitor.py is working.</small>
-            </div>
-          )}
-
-          {(view === "apps" && apps.length === 0) && (
-            <div className="error-message">
-              No application data received from the server.
-              <br />
-              <small>Check server connection and make sure process_monitor.py is working.</small>
-            </div>
-          )}
         </>
       )}
 
